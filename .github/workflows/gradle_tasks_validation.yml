@@ -85,6 +85,7 @@ jobs:
         run: PREINSTRUMENTED_SDK_VERSIONS=36 PUBLISH_PREINSTRUMENTED_JARS=true ./gradlew :preinstrumented:publishToMavenLocal
 
   run_publishToMavenLocal:
+    if: github.repository == 'robolectric/robolectric'
     runs-on: ubuntu-latest
 
     steps:
