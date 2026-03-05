@@ -166,6 +166,7 @@ jobs:
             **/build/outputs/*/connected/*
 
   publish-to-snapshots:
+    if: github.repository == 'robolectric/robolectric'
     runs-on: ubuntu-latest
     env:
       SONATYPE_LOGIN: ${{ secrets.SONATYPE_LOGIN }}
