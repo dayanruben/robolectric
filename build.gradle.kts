@@ -25,7 +25,7 @@ allprojects {
 
   // Upgrade com.google.testing.platform from 0.0.9-alpha03 to 0.0.9-alpha04 to fix
   // security issues. AGP 9.0.0 pins UTP to 0.0.9-alpha03 which
-  // transitively depends on vulnerable protobuf-kotlin:2.3.20-RC2 The alpha04 release
+  // transitively depends on vulnerable protobuf-kotlin:2.3.20-RC3 The alpha04 release
   // upgrades to protobuf 4.28.3 which includes the fix.
   // Remove it after newer AGP depends on alpha04 or newer version.
   configurations.configureEach {
