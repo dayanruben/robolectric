@@ -34,7 +34,7 @@ kotlin = "2.3.10"
 kotlinx-coroutines = '1.10.2'
 
 # https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md
-spotless-gradle = "8.3.0"
+spotless-gradle = "8.4.0"
 
 # https://detekt.dev/changelog
 detekt-gradle = "1.23.8"
@@ -64,7 +64,7 @@ gson = "2.13.2"
 truth = "1.4.5"
 
 # https://github.com/unicode-org/icu/releases
-icu4j = "78.2"
+icu4j = "78.3"
 
 # https://www.eclemma.org/jacoco/
 jacoco = "0.8.14"
@@ -130,7 +130,7 @@ play-services-basement = "18.0.1"
 test-parameter-injector = "1.21"
 
 # https://plugins.gradle.org/plugin/com.gradle.plugin-publish
-gradle-plugin-publish = "2.1.0"
+gradle-plugin-publish = "2.1.1"
 
 # Only used for shadows/httpclient tests
 legacy-apache-http-client = "1.0"
