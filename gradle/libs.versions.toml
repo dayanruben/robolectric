@@ -79,7 +79,7 @@ junit4 = "4.13.2"
 junit-jupiter = "6.0.3"
 
 # https://github.com/google/libphonenumber/releases
-libphonenumber = "9.0.26"
+libphonenumber = "9.0.27"
 
 # https://github.com/mockito/mockito/releases
 mockito = "5.23.0"
@@ -121,7 +121,7 @@ androidx-test-runner = "1.7.0"
 androidx-test-services = "1.6.0"
 
 # https://developer.android.com/jetpack/androidx/releases/compose
-androidx-compose-bom = "2026.03.00"
+androidx-compose-bom = "2026.03.01"
 
 # https://developers.google.com/android/guides/releases
 play-services-basement = "18.0.1"
