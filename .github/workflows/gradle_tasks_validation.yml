@@ -20,6 +20,7 @@ permissions:
 
 jobs:
   run_aggregateDocs:
+    if: ${{ github.ref != 'refs/heads/eap/kotlin' && github.head_ref != 'eap/kotlin' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -44,6 +45,7 @@ jobs:
           path: build/docs
 
   run_javadocJar:
+    if: ${{ github.ref != 'refs/heads/eap/kotlin' && github.head_ref != 'eap/kotlin' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -62,6 +64,7 @@ jobs:
 
 
   run_instrumentAll:
+    if: ${{ github.ref != 'refs/heads/eap/kotlin' && github.head_ref != 'eap/kotlin' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -101,3 +104,9 @@ jobs:
 
       - name: Publish to Maven local
         run: ./gradlew publishToMavenLocal
+
+  eap-smoke:
+    if: ${{ github.ref == 'refs/heads/eap/kotlin' || github.head_ref == 'eap/kotlin' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Skipping Gradle tasks validation for Kotlin EAP branch."

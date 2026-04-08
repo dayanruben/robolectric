@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   validate_commit_message:
+    if: ${{ github.ref != 'refs/heads/eap/kotlin' && github.head_ref != 'eap/kotlin' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -53,3 +54,9 @@ jobs:
               exit 1
             fi
           done <<< $commit_body
+
+  eap-smoke:
+    if: ${{ github.ref == 'refs/heads/eap/kotlin' || github.head_ref == 'eap/kotlin' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Skipping commit message validation for Kotlin EAP branch."

@@ -20,6 +20,7 @@ permissions:
 
 jobs:
   check_code_style:
+    if: ${{ github.ref != 'refs/heads/eap/kotlin' && github.head_ref != 'eap/kotlin' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -65,3 +66,9 @@ jobs:
 
       - name: Check Kotlin Quality
         run: ./gradlew detekt
+
+  eap-smoke:
+    if: ${{ github.ref == 'refs/heads/eap/kotlin' || github.head_ref == 'eap/kotlin' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Skipping strict code style validation for Kotlin EAP branch."

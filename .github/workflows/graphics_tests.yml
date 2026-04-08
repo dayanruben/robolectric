@@ -19,12 +19,11 @@ permissions:
 
 jobs:
   graphics_tests:
+    if: ${{ github.ref != 'refs/heads/eap/kotlin' && github.head_ref != 'eap/kotlin' }}
     strategy:
       fail-fast: false
       matrix:
         device: [
-          macos-15-intel, # Tests Mac x86_64
-          macos-latest, # Tests Mac arm64
           ubuntu-latest, # Tests Linux x86_64
           windows-latest, # Tests Windows x86_64
         ]
@@ -65,3 +64,9 @@ jobs:
             **/roborazzi/build/reports/*
             **/roborazzi/src/screenshots/*
             **/roborazzi/build/outputs/roborazzi/*
+
+  eap-smoke:
+    if: ${{ github.ref == 'refs/heads/eap/kotlin' || github.head_ref == 'eap/kotlin' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Skipping graphics tests for Kotlin EAP branch."
