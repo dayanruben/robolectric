@@ -2,9 +2,9 @@
 robolectric-nativeruntime-dist-compat = "1.0.19"
 
 # https://developer.android.com/studio/releases
-android-gradle = "9.2.0"
+android-gradle = "9.2.1"
 
-android-tools-common = "32.2.0"
+android-tools-common = "32.2.1"
 
 # The runtime dependency for Android classes when Robolectric tests are run
 androidstubs = "36"
@@ -31,7 +31,7 @@ error-prone-gradle = "5.1.0"
 kotlin = "2.3.21"
 
 # https://github.com/Kotlin/kotlinx.coroutines/releases/
-kotlinx-coroutines = '1.10.2'
+kotlinx-coroutines = '1.11.0'
 
 # https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md
 spotless-gradle = "8.4.0"
@@ -79,7 +79,7 @@ junit4 = "4.13.2"
 junit-jupiter = "6.0.3"
 
 # https://github.com/google/libphonenumber/releases
-libphonenumber = "9.0.29"
+libphonenumber = "9.0.30"
 
 # https://github.com/mockito/mockito/releases
 mockito = "5.23.0"
@@ -121,7 +121,7 @@ androidx-test-runner = "1.7.0"
 androidx-test-services = "1.6.0"
 
 # https://developer.android.com/jetpack/androidx/releases/compose
-androidx-compose-bom = "2026.04.01"
+androidx-compose-bom = "2026.05.00"
 
 # https://developers.google.com/android/guides/releases
 play-services-basement = "18.0.1"
