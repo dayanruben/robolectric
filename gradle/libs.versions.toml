@@ -34,7 +34,7 @@ kotlin = "2.3.21"
 kotlinx-coroutines = '1.11.0'
 
 # https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md
-spotless-gradle = "8.6.0"
+spotless-gradle = "8.7.0"
 
 # https://detekt.dev/changelog
 detekt-gradle = "1.23.8"
@@ -79,7 +79,7 @@ junit4 = "4.13.2"
 junit-jupiter = "6.1.0"
 
 # https://github.com/google/libphonenumber/releases
-libphonenumber = "9.0.32"
+libphonenumber = "9.0.33"
 
 # https://github.com/mockito/mockito/releases
 mockito = "5.23.0"
