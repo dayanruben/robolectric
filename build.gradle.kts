@@ -1,13 +1,19 @@
 import groovy.util.Node
+import javax.inject.Inject
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.TaskAction
 import org.gradle.plugins.ide.idea.model.IdeaModel
+import org.gradle.process.ExecOperations
+import org.gradle.work.DisableCachingByDefault
 import org.robolectric.gradle.AndroidSdk
 import org.robolectric.gradle.ShadowsPlugin.ShadowsPluginExtension
 
 // For use of external initialization scripts...
-val allSdks by project.extra(AndroidSdk.ALL_SDKS)
-val configAnnotationProcessing by project.extra(emptyList<Project>())
+project.extra["allSdks"] = AndroidSdk.ALL_SDKS
 
-val thisVersion: String by project
+project.extra["configAnnotationProcessing"] = emptyList<Project>()
+
+val thisVersion = project.property("thisVersion") as String
 
 plugins {
   // Define versions for plugins used in subprojects. 'apply false' is used to load the plugin
@@ -30,6 +36,8 @@ allprojects {
 }
 
 project.afterEvaluate {
+  @Suppress("UNCHECKED_CAST")
+  val configAnnotationProcessing = project.extra["configAnnotationProcessing"] as List<Project>
   val ideaProject = rootProject.extensions.getByType<IdeaModel>().project
   ideaProject.ipr.withXml {
     val compilerConfiguration =
@@ -126,82 +134,115 @@ gradle.projectsEvaluated {
     }
   }
 
-  val aggregateJsondocs by
-    tasks.registering(Copy::class) {
-      project.subprojects
-        .filter { it.pluginManager.hasPlugin(libs.plugins.robolectric.shadows.get().pluginId) }
-        .forEach { subproject ->
-          dependsOn(subproject.tasks.named("compileJava"))
-          from(subproject.layout.buildDirectory.dir("docs/json"))
-        }
+  tasks.register<Copy>("aggregateJsondocs") {
+    project.subprojects
+      .filter { it.pluginManager.hasPlugin(libs.plugins.robolectric.shadows.get().pluginId) }
+      .forEach { subproject ->
+        dependsOn(subproject.tasks.named("compileJava"))
+        from(subproject.layout.buildDirectory.dir("docs/json"))
+      }
 
-      into(layout.buildDirectory.dir("docs/json"))
-    }
+    into(layout.buildDirectory.dir("docs/json"))
+  }
 }
 
-val aggregateDocs by tasks.registering { dependsOn(":aggregateJavadocs", ":aggregateJsondocs") }
+val aggregateDocs =
+  tasks.register("aggregateDocs") { dependsOn(":aggregateJavadocs", ":aggregateJsondocs") }
 
-val prefetchSdks by
-  tasks.registering {
-    allSdks.forEach { androidSdk ->
-      doLast {
-        prefetchSdk(
-          apiLevel = androidSdk.apiLevel,
-          coordinates = androidSdk.coordinates,
-          groupId = androidSdk.groupId,
-          artifactId = androidSdk.artifactId,
-          version = androidSdk.version,
-        )
-      }
+@Suppress("UNCHECKED_CAST") val allSdks = project.extra["allSdks"] as List<AndroidSdk>
+
+val prefetchSdkTasks =
+  allSdks.map { androidSdk ->
+    val configuration = configurations.register("sdk${androidSdk.apiLevel}")
+    dependencies.add(configuration.name, androidSdk.coordinates)
+
+    tasks.register<PrefetchSdkTask>("prefetchSdk${androidSdk.apiLevel}") {
+      description = "Prefetch the 'android-all' artifact for API level ${androidSdk.apiLevel}"
+      group = "robolectric"
+
+      apiLevel = androidSdk.apiLevel
+      coordinates = androidSdk.coordinates
+      groupId = androidSdk.groupId
+      artifactId = androidSdk.artifactId
+      version = androidSdk.version
+      sdkFiles.from(configuration)
     }
   }
 
-val prefetchInstrumentedSdks by
-  tasks.registering {
-    allSdks.forEach { androidSdk ->
-      doLast {
-        prefetchSdk(
-          apiLevel = androidSdk.apiLevel,
-          coordinates = androidSdk.preinstrumentedCoordinates,
-          groupId = androidSdk.groupId,
-          artifactId = androidSdk.preinstrumentedArtifactId,
-          version = androidSdk.preinstrumentedVersion,
-        )
-      }
+val prefetchInstrumentedSdkTasks =
+  allSdks.map { androidSdk ->
+    val configuration = configurations.register("sdkInstrumented${androidSdk.apiLevel}")
+    dependencies.add(configuration.name, androidSdk.preinstrumentedCoordinates)
+
+    tasks.register<PrefetchSdkTask>("prefetchInstrumentedSdk${androidSdk.apiLevel}") {
+      description =
+        "Prefetch the 'android-all-instrumented' artifact for API level ${androidSdk.apiLevel}"
+      group = "robolectric"
+
+      apiLevel = androidSdk.apiLevel
+      coordinates = androidSdk.preinstrumentedCoordinates
+      groupId = androidSdk.groupId
+      artifactId = androidSdk.preinstrumentedArtifactId
+      version = androidSdk.preinstrumentedVersion
+      sdkFiles.from(configuration)
     }
   }
 
-fun prefetchSdk(
-  apiLevel: Int,
-  coordinates: String,
-  groupId: String,
-  artifactId: String,
-  version: String,
-) {
-  println("Prefetching $coordinates...")
+val prefetchSdks =
+  tasks.register("prefetchSdks") {
+    description = "Prefetch the 'android-all' artifact for all the supported API levels"
+    group = "robolectric"
 
-  // Prefetch into Maven local repo...
-  project.providers
-    .exec {
-      val mvnCommand =
-        "mvn -q dependency:get -DrepoUrl=https://maven.google.com " +
-          "-DgroupId=$groupId -DartifactId=$artifactId -Dversion=$version"
+    dependsOn(prefetchSdkTasks)
+  }
 
-      commandLine(mvnCommand.split(" "))
-    }
-    .result
-    .get()
+val prefetchInstrumentedSdks =
+  tasks.register("prefetchInstrumentedSdks") {
+    description =
+      "Prefetch the 'android-all-instrumented' artifact for all the supported API levels"
+    group = "robolectric"
 
-  // Prefetch into Gradle local cache...
-  val config = configurations.create("sdk$apiLevel")
-  dependencies.add("sdk$apiLevel", coordinates)
+    dependsOn(prefetchInstrumentedSdkTasks)
+  }
 
-  // Causes dependencies to be resolved:
-  config.files
+@DisableCachingByDefault
+abstract class PrefetchSdkTask : DefaultTask() {
+  @get:Input abstract val apiLevel: Property<Int>
+  @get:Input abstract val coordinates: Property<String>
+  @get:Input abstract val groupId: Property<String>
+  @get:Input abstract val artifactId: Property<String>
+  @get:Input abstract val version: Property<String>
+  @get:InputFiles abstract val sdkFiles: ConfigurableFileCollection
+
+  @get:Inject abstract val execOperations: ExecOperations
+
+  @TaskAction
+  fun prefetchSdk() {
+    logger.lifecycle("Prefetching {}...", coordinates.get())
+
+    // Prefetch into Maven local repo...
+    execOperations
+      .exec {
+        commandLine(
+          "mvn",
+          "-q",
+          "dependency:get",
+          "-DrepoUrl=https://maven.google.com",
+          "-DgroupId=${groupId.get()}",
+          "-DartifactId=${artifactId.get()}",
+          "-Dversion=${version.get()}",
+        )
+      }
+      .rethrowFailure()
+      .assertNormalExitValue()
+
+    // Causes dependencies to be resolved:
+    sdkFiles.files
+  }
 }
 
-val prefetchDependencies by
-  tasks.registering {
+val prefetchDependencies =
+  tasks.register("prefetchDependencies") {
     doLast {
       allprojects.forEach { p ->
         p.configurations.forEach { config ->
