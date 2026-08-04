@@ -43,7 +43,7 @@ kctfork = "0.13.0"
 kotlinx-coroutines = '1.11.0'
 
 # https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md
-spotless-gradle = "8.8.0"
+spotless-gradle = "8.9.0"
 
 # https://detekt.dev/changelog
 detekt-gradle = "1.23.8"
@@ -88,7 +88,7 @@ junit4 = "4.13.2"
 junit-jupiter = "6.1.2"
 
 # https://github.com/google/libphonenumber/releases
-libphonenumber = "9.0.35"
+libphonenumber = "9.0.36"
 
 # https://github.com/mockito/mockito/releases
 mockito = "5.23.0"
@@ -113,7 +113,7 @@ sqlite4java = "1.0.392"
 androidx-annotation = "1.10.0"
 androidx-appcompat = "1.7.1"
 androidx-biometric = "1.1.0"
-androidx-constraintlayout = "2.2.1"
+androidx-constraintlayout = "2.2.2"
 androidx-core = "1.19.0"
 androidx-fragment = "1.8.9"
 androidx-window = "1.5.1"
@@ -145,7 +145,7 @@ gradle-plugin-publish = "2.1.1"
 legacy-apache-http-client = "1.0"
 
 # https://github.com/jspecify/jspecify/releases
-jspecify = "1.0.0"
+jspecify = "1.0.1"
 
 [libraries]
 android-gradle-api = { module = "com.android.tools.build:gradle-api", version.ref = "android-gradle" }
