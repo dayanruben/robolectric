@@ -20,6 +20,7 @@ permissions:
 
 jobs:
   check_code_style:
+    name: Check Code Style
     runs-on: ubuntu-latest
 
     steps:
@@ -32,11 +33,14 @@ jobs:
           distribution: 'temurin'
           java-version-file: .github/.java-version
 
-      - name: Check Android Lint
-        run: ./gradlew lint --continue
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Check Java and Kotlin Formatting
         run: ./gradlew spotlessCheck
 
       - name: Check Kotlin Quality
         run: ./gradlew detekt
+
+      - name: Check Android Lint
+        run: ./gradlew lint --continue
