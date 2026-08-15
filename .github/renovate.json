@@ -47,12 +47,14 @@
     },
     {
       "groupName": "Android Gradle Plugin",
-      "matchManagers": "gradle",
-      "matchPackageNames": [
+      "matchDepNames": [
+        "com.android.application",
+        "com.android.legacy-kapt",
         "com.android.library",
         "com.android.tools:common",
-        "com.android.tools.build:gradle*"
-      ]
+        "com.android.tools.build:gradle-api"
+      ],
+      "matchManagers": "gradle"
     },
     {
       "groupName": "AndroidX Test",
