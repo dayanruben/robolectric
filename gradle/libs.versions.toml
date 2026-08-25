@@ -10,7 +10,7 @@ android-tools-common = "32.2.1"
 androidstubs = "36"
 
 # https://github.com/google/conscrypt/tags
-conscrypt = "2.6.2"
+conscrypt = "2.6.3"
 
 # https://github.com/bcgit/bc-java/tags
 bouncycastle = "1.85.2"
@@ -40,7 +40,7 @@ kctfork = "0.13.0"
 kotlinx-coroutines = '1.11.0'
 
 # https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md
-spotless-gradle = "8.9.0"
+spotless-gradle = "8.10.0"
 
 # https://detekt.dev/changelog
 detekt-gradle = "1.23.8"
@@ -57,7 +57,7 @@ auto-value = "1.11.1"
 compile-testing = "0.23.0"
 
 # https://github.com/google/guava/releases
-guava-jre = "33.6.0-jre"
+guava-jre = "33.7.1-jre"
 
 # https://github.com/google/gson/releases
 gson = "2.14.0"
