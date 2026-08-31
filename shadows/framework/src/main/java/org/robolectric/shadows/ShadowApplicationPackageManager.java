@@ -80,7 +80,6 @@ import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Handler;
@@ -1009,7 +1008,7 @@ public class ShadowApplicationPackageManager extends ShadowPackageManager {
       componentInfo.metaData = null;
     }
     boolean isComponentEnabled = isComponentEnabled(componentInfo);
-    if ((flags & MATCH_ALL) != 0 && Build.VERSION.SDK_INT >= 23) {
+    if ((flags & MATCH_ALL) != 0) {
       return;
     }
     // Android don't override the enabled field of component with the actual value.
@@ -1172,7 +1171,7 @@ public class ShadowApplicationPackageManager extends ShadowPackageManager {
     throw new NameNotFoundException(name);
   }
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected boolean shouldShowRequestPermissionRationale(String permission) {
     return permissionRationaleMap.containsKey(permission)
         ? permissionRationaleMap.get(permission)
@@ -1233,7 +1232,7 @@ public class ShadowApplicationPackageManager extends ShadowPackageManager {
   }
 
   @HiddenApi
-  @Implementation(minSdk = M)
+  @Implementation
   protected String getPermissionControllerPackageName() {
     return PERMISSION_CONTROLLER_PACKAGE_NAME;
   }
@@ -1602,7 +1601,7 @@ public class ShadowApplicationPackageManager extends ShadowPackageManager {
       }
     }
 
-    if ((flags & MATCH_ALL) != 0 && Build.VERSION.SDK_INT >= 23) {
+    if ((flags & MATCH_ALL) != 0) {
       return;
     }
     if ((flags & MATCH_UNINSTALLED_PACKAGES) == 0 && (appInfo.flags & FLAG_INSTALLED) == 0) {
@@ -1637,7 +1636,7 @@ public class ShadowApplicationPackageManager extends ShadowPackageManager {
     return false;
   }
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected boolean isPermissionRevokedByPolicy(String permName, String pkgName) {
     return false;
   }
@@ -1655,7 +1654,7 @@ public class ShadowApplicationPackageManager extends ShadowPackageManager {
   @Implementation
   protected void removePermission(String name) {}
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected void grantRuntimePermission(
       String packageName, String permissionName, UserHandle user) {
     Integer uid;
@@ -1677,14 +1676,14 @@ public class ShadowApplicationPackageManager extends ShadowPackageManager {
       uid = uidForPackage.get(packageName);
     }
 
-    if (RuntimeEnvironment.getApiLevel() >= VERSION_CODES.M && uid != null) {
+    if (uid != null) {
       for (Object listener : permissionListeners) {
         ((OnPermissionsChangedListener) listener).onPermissionsChanged(uid);
       }
     }
   }
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected void revokeRuntimePermission(
       String packageName, String permissionName, UserHandle user) {
     Integer uid;
@@ -1706,7 +1705,7 @@ public class ShadowApplicationPackageManager extends ShadowPackageManager {
       uid = uidForPackage.get(packageName);
     }
 
-    if (RuntimeEnvironment.getApiLevel() >= VERSION_CODES.M && uid != null) {
+    if (uid != null) {
       for (Object listener : permissionListeners) {
         ((OnPermissionsChangedListener) listener).onPermissionsChanged(uid);
       }
@@ -1744,7 +1743,7 @@ public class ShadowApplicationPackageManager extends ShadowPackageManager {
    * that were added via updatePermissionFlags, and do not perform any verification of permissions,
    * packages or users.
    */
-  @Implementation(minSdk = M)
+  @Implementation
   protected int getPermissionFlags(String permissionName, String packageName, UserHandle user) {
     if (permissionFlags.containsKey(packageName)) {
       return permissionFlags.get(packageName).getOrDefault(permissionName, /* defaultValue= */ 0);
@@ -1757,7 +1756,7 @@ public class ShadowApplicationPackageManager extends ShadowPackageManager {
    * This method differs from the real implementation in that no permission checking or package
    * existent checks are performed here.
    */
-  @Implementation(minSdk = M)
+  @Implementation
   protected void updatePermissionFlags(
       String permissionName,
       String packageName,
@@ -1994,14 +1993,14 @@ public class ShadowApplicationPackageManager extends ShadowPackageManager {
     return null;
   }
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected void addOnPermissionsChangeListener(
       @ClassName("android.content.pm.PackageManager$OnPermissionsChangedListener")
           Object listener) {
     permissionListeners.add(listener);
   }
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected void removeOnPermissionsChangeListener(
       @ClassName("android.content.pm.PackageManager$OnPermissionsChangedListener")
           Object listener) {
@@ -2026,7 +2025,7 @@ public class ShadowApplicationPackageManager extends ShadowPackageManager {
     return 0;
   }
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected void verifyIntentFilter(int id, int verificationCode, List<String> failedDomains) {}
 
   @Implementation(minSdk = N)
@@ -2040,12 +2039,12 @@ public class ShadowApplicationPackageManager extends ShadowPackageManager {
     return false;
   }
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected List<IntentFilterVerificationInfo> getIntentFilterVerifications(String packageName) {
     return null;
   }
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected List<IntentFilter> getAllIntentFilters(String packageName) {
     return null;
   }
@@ -2061,49 +2060,49 @@ public class ShadowApplicationPackageManager extends ShadowPackageManager {
     return true;
   }
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected int getMoveStatus(int moveId) {
     return 0;
   }
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected void registerMoveCallback(
       @ClassName("android.content.pm.PackageManager$MoveCallback") Object callback,
       Handler handler) {}
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected void unregisterMoveCallback(
       @ClassName("android.content.pm.PackageManager$MoveCallback") Object callback) {}
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected int movePackage(
       String packageName, @ClassName("android.os.storage.VolumeInfo") Object vol) {
     return 0;
   }
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected @ClassName("android.os.storage.VolumeInfo") Object getPackageCurrentVolume(
       @ClassName("android.content.pm.ApplicationInfo") Object app) {
     return null;
   }
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected List<VolumeInfo> getPackageCandidateVolumes(ApplicationInfo app) {
     return null;
   }
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected int movePrimaryStorage(@ClassName("android.os.storage.VolumeInfo") Object vol) {
     return 0;
   }
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected @Nullable @ClassName("android.os.storage.VolumeInfo") Object
       getPrimaryStorageCurrentVolume() {
     return null;
   }
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected @Nonnull List<VolumeInfo> getPrimaryStorageCandidateVolumes() {
     return null;
   }
@@ -2124,7 +2123,7 @@ public class ShadowApplicationPackageManager extends ShadowPackageManager {
   protected void deleteApplicationCacheFilesAsUser(
       String packageName, int userId, IPackageDataObserver observer) {}
 
-  @Implementation(minSdk = M)
+  @Implementation
   protected void freeStorage(String volumeUuid, long freeStorageSize, IntentSender pi) {}
 
   @Implementation(minSdk = N, maxSdk = O_MR1)
