@@ -57,7 +57,7 @@ auto-value = "1.11.1"
 compile-testing = "0.23.0"
 
 # https://github.com/google/guava/releases
-guava-jre = "33.7.1-jre"
+guava-jre = "33.7.2-jre"
 
 # https://github.com/google/gson/releases
 gson = "2.14.0"
@@ -145,6 +145,7 @@ android-tools-common = { module = "com.android.tools:common", version.ref = "and
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 
 auto-common = { module = "com.google.auto:auto-common", version.ref = "auto-common" }
 auto-service-annotations = { module = "com.google.auto.service:auto-service-annotations", version.ref = "auto-service" }
@@ -226,6 +227,8 @@ androidx-core = { module = "androidx.core:core", version.ref = "androidx-core" }
 androidx-fragment = { module = "androidx.fragment:fragment", version.ref = "androidx-fragment" }
 androidx-fragment-testing = { module = "androidx.fragment:fragment-testing", version.ref = "androidx-fragment" }
 androidx-window = { module = "androidx.window:window", version.ref = "androidx-window" }
+androidx-window-core = { module = "androidx.window:window-core", version.ref = "androidx-window" }
+androidx-window-testing = { module = "androidx.window:window-testing", version.ref = "androidx-window" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "androidx-room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "androidx-room" }
 androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "androidx-recyclerview" }
@@ -249,6 +252,10 @@ androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4
 androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
+androidx-compose-material3-adaptive = { module = "androidx.compose.material3.adaptive:adaptive" }
+androidx-compose-material3-adaptive-layout = { module = "androidx.compose.material3.adaptive:adaptive-layout" }
+androidx-compose-material3-adaptive-navigation = { module = "androidx.compose.material3.adaptive:adaptive-navigation" }
+androidx-compose-material3-adaptive-navigation-suite = { module = "androidx.compose.material3:material3-adaptive-navigation-suite" }
 
 play-services-basement = { module = "com.google.android.gms:play-services-basement", version.ref = "play-services-basement" }
 
