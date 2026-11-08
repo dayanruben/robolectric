@@ -18,6 +18,7 @@ import android.hardware.display.BrightnessChangeEvent;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.DisplayManagerGlobal;
 import android.os.Build;
+import android.os.Process;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.DisplayInfo;
@@ -156,6 +157,7 @@ public class ShadowDisplayManager {
     displayInfo.physicalXDpi = displayMetrics.densityDpi;
     displayInfo.physicalYDpi = displayMetrics.densityDpi;
     displayInfo.state = Display.STATE_ON;
+    displayInfo.ownerUid = Process.myUid();
     displayInfo.type = displayType;
     if (displayType == Display.TYPE_EXTERNAL
         || displayType == Display.TYPE_WIFI
@@ -245,6 +247,10 @@ public class ShadowDisplayManager {
    * href="http://robolectric.org/device-configuration/">here</a>.
    *
    * <p>The display keeps its name, type, flags, state and owner.
+   *
+   * <p>Activities and window contexts on a non-default display get its new configuration. The
+   * default display's configuration is the global one, which {@link
+   * RuntimeEnvironment#setQualifiers} changes.
    *
    * <p>Idles the main looper to ensure all listeners are notified.
    *
