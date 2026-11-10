@@ -1,6 +1,7 @@
 package org.robolectric.simulator.gradle
 
 import com.google.common.truth.Truth.assertThat
+import org.gradle.testkit.runner.BuildResult
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -20,6 +21,16 @@ class SimulatorPluginTest {
     assertThat(result.output).contains("simulateDemoDebug")
     assertThat(result.output).contains("simulateProdDebug")
     assertThat(result.output).contains("simulateDemoRelease")
+  }
+
+  @Test
+  fun tasks_simulatorPluginAppliedBeforeTheAndroidPlugin_listsSimulateTasks() {
+    val project =
+      AndroidTestProject(tempFolder.root, appBuildScript = FLAVORS, simulatorPluginFirst = true)
+
+    val result = project.build("tasks", "--all")
+
+    assertThat(result.output).contains("simulateDemoDebug")
   }
 
   @Test
@@ -45,6 +56,30 @@ class SimulatorPluginTest {
     assertThat(result.output).contains(":app:compileDemoDebugUnitTestJavaWithJavac SKIPPED")
     assertThat(result.output).doesNotContain(":app:packageDemoDebug SKIPPED")
     assertThat(result.output).doesNotContain(":app:assembleDemoDebug SKIPPED")
+  }
+
+  @Test
+  fun simulate_usesTheSimulatorOfTheRobolectricVersionInTestImplementation() {
+    val project = AndroidTestProject(tempFolder.root, appBuildScript = FLAVORS)
+    // The plugin adds the simulator dependency when the simulate task is configured, so print the
+    // classpath that task runs with rather than a dependency report that doesn't configure it.
+    tempFolder.root
+      .resolve("app/build.gradle.kts")
+      .appendText(
+        """
+
+        tasks.register("printSimulateClasspath") {
+          val classpath = tasks.named<JavaExec>("simulateDemoDebug").map { it.classpath }
+          doLast { classpath.get().forEach { println("Simulate classpath: " + it.name) } }
+        }
+        """
+          .trimIndent(),
+      )
+
+    val result = project.build("printSimulateClasspath")
+
+    assertThat(result.output).contains("Simulate classpath: simulator-4.17.jar")
+    assertThat(result.output).doesNotContain("No compatible Robolectric version found")
   }
 
   @Test
@@ -74,7 +109,46 @@ class SimulatorPluginTest {
     assertThat(result.output).contains("isIncludeAndroidResources")
   }
 
+  @Test
+  fun simulate_usesTheHeapSizeOfTheUnitTests() {
+    val project =
+      AndroidTestProject(
+        tempFolder.root,
+        appBuildScript =
+          """
+          testOptions.unitTests.all {
+            it.minHeapSize = "512m"
+            it.maxHeapSize = "3g"
+          }
+          """,
+        extraBuildScript = PRINT_SIMULATE_JVM_ARGS,
+      )
+
+    val result = project.build("printSimulateJvmArgs")
+
+    assertThat(simulateJvmArgs(result)).containsAtLeast("-Xms512m", "-Xmx3g")
+  }
+
+  private fun simulateJvmArgs(result: BuildResult): List<String> =
+    result.output
+      .lines()
+      .filter { it.startsWith(SIMULATE_JVM_ARG_PREFIX) }
+      .map { it.removePrefix(SIMULATE_JVM_ARG_PREFIX) }
+
   private companion object {
+    const val SIMULATE_JVM_ARG_PREFIX = "simulateDebug JVM arg: "
+
+    // Prints the JVM arguments of the simulate task, which --dry-run does not show.
+    const val PRINT_SIMULATE_JVM_ARGS =
+      """
+      tasks.register("printSimulateJvmArgs") {
+        doLast {
+          val jvmArgs = tasks.named<JavaExec>("simulateDebug").get().allJvmArgs
+          jvmArgs.forEach { println("$SIMULATE_JVM_ARG_PREFIX" + it) }
+        }
+      }
+      """
+
     const val FLAVORS =
       """
       flavorDimensions += "env"

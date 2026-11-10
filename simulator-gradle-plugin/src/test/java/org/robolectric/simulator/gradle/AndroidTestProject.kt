@@ -7,12 +7,15 @@ import org.gradle.testkit.runner.GradleRunner
 /**
  * A minimal Android app project in [dir] that applies the simulator plugin, for Gradle TestKit
  * tests. [appBuildScript] holds extra configuration for the app module's `android` block, such as
- * product flavors.
+ * product flavors, and [extraBuildScript] extra top-level code for the app module's build script.
+ * [simulatorPluginFirst] applies the simulator plugin before the Android one.
  */
 internal class AndroidTestProject(
   private val dir: File,
   appBuildScript: String = "",
   includeAndroidResources: Boolean = true,
+  extraBuildScript: String = "",
+  simulatorPluginFirst: Boolean = false,
 ) {
   init {
     dir
@@ -28,13 +31,17 @@ internal class AndroidTestProject(
       )
     androidSdkDir()?.let { dir.resolve("local.properties").writeText("sdk.dir=$it\n") }
     dir.resolve("app").mkdirs()
+    val pluginIds =
+      listOf("com.android.application", "org.robolectric.simulator").let {
+        if (simulatorPluginFirst) it.reversed() else it
+      }
     dir
       .resolve("app/build.gradle.kts")
       .writeText(
         """
       plugins {
-        id("com.android.application")
-        id("org.robolectric.simulator")
+        id("${pluginIds[0]}")
+        id("${pluginIds[1]}")
       }
 
       android {
@@ -46,6 +53,7 @@ internal class AndroidTestProject(
       }
 
       dependencies { testImplementation("org.robolectric:robolectric:4.17") }
+      $extraBuildScript
       """
           .trimIndent(),
       )
