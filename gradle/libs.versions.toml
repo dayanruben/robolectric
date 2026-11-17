@@ -1,7 +1,7 @@
 [versions]
 robolectric-nativeruntime-dist-compat = "1.0.20"
 
-commons-logging = "1.2"
+commons-logging = "1.4.0"
 xml-security = "4.0.4"
 
 # https://developer.android.com/studio/releases
@@ -16,7 +16,7 @@ androidstubs = "36"
 conscrypt = "2.9.0"
 
 # https://github.com/bcgit/bc-java/tags
-bouncycastle = "1.86.2"
+bouncycastle = "1.87"
 
 # https://github.com/findbugsproject/findbugs/tags
 findbugs-jsr305 = "3.0.2"
@@ -34,7 +34,7 @@ error-prone-gradle = "5.2.0"
 kotlin = "2.4.21"
 
 # https://github.com/google/ksp/releases
-ksp = "2.3.13"
+ksp = "2.3.14"
 
 # https://github.com/ZacSweers/kotlin-compile-testing/releases
 kctfork = "0.14.0"
@@ -43,7 +43,7 @@ kctfork = "0.14.0"
 kotlinx-coroutines = '1.11.0'
 
 # https://github.com/cashapp/molecule/releases
-molecule = "2.1.0"
+molecule = "2.2.0"
 
 # https://github.com/diffplug/spotless/blob/main/plugin-gradle/CHANGES.md
 spotless-gradle = "8.11.0"
@@ -96,7 +96,7 @@ mockito = "5.24.0"
 mockk = "1.14.12"
 
 # https://github.com/takahirom/roborazzi/releases
-roborazzi = "1.78.0"
+roborazzi = "1.79.0"
 
 # https://square.github.io/okhttp/changelogs/changelog/
 okhttp = "5.5.1"
@@ -117,7 +117,7 @@ androidx-window = "1.5.1"
 androidx-room = "2.8.5"
 androidx-recyclerview = "1.4.0"
 # https://github.com/material-components/material-components-android/tags
-material = "1.12.0"
+material = "1.14.0"
 
 # https://github.com/android/android-test/tags
 androidx-test-core = "1.7.0"

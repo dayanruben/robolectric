@@ -32,7 +32,15 @@ fun Test.configureTestTask() {
   minHeapSize = "2g"
   maxHeapSize = "12g"
 
-  System.getenv("GRADLE_MAX_PARALLEL_FORKS")?.toIntOrNull()?.let { maxParallelForks = it }
+  val maxForks = System.getenv("GRADLE_MAX_PARALLEL_FORKS")?.toIntOrNull()
+  if (maxForks != null) {
+    maxParallelForks = maxForks
+  }
+
+  // Runs the tests on another JDK than Gradle's, such as an x64 JDK under Rosetta 2.
+  System.getenv("TEST_JAVA_HOME")
+    ?.takeIf { it.isNotEmpty() }
+    ?.let { executable = File(it, "bin/java").path }
 
   jvmArgumentProviders.add(
     RobolectricJvmArgumentsProvider(
@@ -68,8 +76,11 @@ private fun requireRobolectricDeps(classpath: FileCollection) {
 
 private const val ROBOLECTRIC_DEPS = "robolectric-deps.properties"
 
+// The input is public so that Kotlin generates the annotated getter, which Gradle reads to find the
+// task's inputs. With a private property the annotation is dropped, and changing a robolectric.*
+// system property neither reruns the tests nor misses the build cache.
 private class RobolectricJvmArgumentsProvider(
-  @get:Input private val robolectricPropertiesProvider: Provider<Map<String, String>>,
+  @get:Input val robolectricPropertiesProvider: Provider<Map<String, String>>,
   @get:Internal private val logger: Logger,
 ) : CommandLineArgumentProvider {
   override fun asArguments(): Iterable<String> {
