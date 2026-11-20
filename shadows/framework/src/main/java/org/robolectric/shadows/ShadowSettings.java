@@ -121,6 +121,8 @@ public class ShadowSettings {
       } else {
         SECURE_DEFAULTS.put(Secure.LOCATION_MODE, Optional.of(String.valueOf(LOCATION_MODE_OFF)));
       }
+      // Real devices always have an ANDROID_ID, a 64-bit value rendered as 16 lowercase hex chars.
+      SECURE_DEFAULTS.put(Secure.ANDROID_ID, Optional.of("5e3f1c9a7b2d4e60"));
     }
 
     private static final Map<String, Optional<String>> dataMap =
@@ -393,14 +395,11 @@ public class ShadowSettings {
    * @param installNonMarketApps new value for whether non-market apps are allowed to be installed
    */
   public static void setInstallNonMarketApps(boolean installNonMarketApps) {
-    // This setting moved from Secure to Global in JELLY_BEAN_MR1 and then moved it back to Global
-    // in LOLLIPOP. Support all clients by always setting this field on all versions >=
-    // JELLY_BEAN_MR1.
+    // Support all clients by always setting both the Global and the Secure versions.
     Settings.Global.putInt(
         RuntimeEnvironment.getApplication().getContentResolver(),
         Settings.Global.INSTALL_NON_MARKET_APPS,
         installNonMarketApps ? 1 : 0);
-    // Always set the Secure version of the setting
     Settings.Secure.putInt(
         RuntimeEnvironment.getApplication().getContentResolver(),
         Settings.Secure.INSTALL_NON_MARKET_APPS,

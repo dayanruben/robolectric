@@ -197,13 +197,15 @@ public class ShadowViewRootImpl {
     @Accessor("mAttachInfo")
     Object getAttachInfo();
 
+    @Accessor("mForceNextWindowRelayout")
+    void setForceNextWindowRelayout(boolean forceNextWindowRelayout);
+
     // SDK <= S_V2
     void windowFocusChanged(boolean hasFocus, boolean inTouchMode);
 
     // SDK >= T
     void windowFocusChanged(boolean hasFocus);
 
-    // SDK >= M
     @Direct
     WindowInsets getWindowInsets(boolean forceConstruct);
 

@@ -13,11 +13,13 @@ import org.junit.platform.engine.EngineExecutionListener;
 import org.junit.platform.engine.ExecutionRequest;
 import org.junit.platform.engine.TestDescriptor;
 import org.junit.platform.engine.TestExecutionResult;
+import org.junit.platform.engine.TestSource;
 import org.junit.platform.engine.UniqueId;
 import org.junit.platform.engine.discovery.DiscoverySelectors;
 import org.junit.platform.engine.reporting.FileEntry;
 import org.junit.platform.engine.reporting.ReportEntry;
 import org.junit.platform.engine.support.descriptor.AbstractTestDescriptor;
+import org.junit.platform.engine.support.descriptor.MethodSource;
 import org.junit.platform.launcher.TestExecutionListener;
 import org.junit.platform.launcher.TestIdentifier;
 import org.junit.platform.launcher.TestPlan;
@@ -26,13 +28,13 @@ import org.robolectric.pluginapi.config.ConfigurationStrategy.Configuration;
 
 /**
  * The tests that run in one Robolectric sandbox: one SDK, looper, graphics and resources mode, and
- * class loader configuration. Tests from different classes, JUnit Jupiter and JUnit 4, share the
- * sandbox.
+ * class loader configuration. Tests from different classes share the sandbox.
  */
 public final class SandboxDescriptor extends AbstractTestDescriptor {
   static final String SEGMENT_TYPE = "sandbox";
 
   private final SandboxSpec spec;
+  private final Set<MethodSource> testsNamedWithSdk = new HashSet<>();
   @Nullable private Configuration representativeConfiguration;
 
   SandboxDescriptor(UniqueId uniqueId, SandboxSpec spec) {
@@ -59,6 +61,23 @@ public final class SandboxDescriptor extends AbstractTestDescriptor {
     }
   }
 
+  /**
+   * Appends this sandbox's SDK to the names of {@code test} and of the tests it contains, as {@code
+   * RobolectricTestRunner} does for tests that run on several SDKs, so that reports, which don't
+   * show the sandbox containers, can tell them apart.
+   */
+  void nameWithSdk(MethodSource test) {
+    testsNamedWithSdk.add(test);
+  }
+
+  private String variantMarker(TestIdentifier identifier, TestDescriptor parent) {
+    if (parent instanceof MirrorDescriptor mirror && !mirror.getVariantMarker().isEmpty()) {
+      return mirror.getVariantMarker();
+    }
+    TestSource source = identifier.getSource().orElse(null);
+    return testsNamedWithSdk.contains(source) ? "[" + spec.getApiLevel() + "]" : "";
+  }
+
   /** Adds the tests of a Jupiter test plan as children. */
   void addJupiterTests(TestPlan plan) {
     for (TestIdentifier engine : plan.getRoots()) {
@@ -77,7 +96,7 @@ public final class SandboxDescriptor extends AbstractTestDescriptor {
       }
     }
     if (mirror == null) {
-      mirror = new MirrorDescriptor(uniqueId, identifier);
+      mirror = new MirrorDescriptor(uniqueId, identifier, variantMarker(identifier, parent));
       parent.addChild(mirror);
     }
     for (TestIdentifier child : plan.getChildren(identifier)) {
@@ -108,18 +127,6 @@ public final class SandboxDescriptor extends AbstractTestDescriptor {
     try {
       AtomicReference<Throwable> failure = new AtomicReference<>();
       sandbox.runOnMainThreadWithClassLoader(() -> executeJupiterTests(request, jupiter, failure));
-      for (TestDescriptor child : new ArrayList<>(getChildren())) {
-        if (!(child instanceof CompatClassDescriptor)) {
-          continue;
-        }
-        CompatClassDescriptor compatClass = (CompatClassDescriptor) child;
-        if (request.getCancellationToken().isCancellationRequested()) {
-          listener.executionSkipped(child, "Execution cancelled");
-        } else {
-          sandbox.runOnMainThreadWithClassLoader(
-              () -> JUnit4Compat.execute(compatClass, sandbox, listener));
-        }
-      }
       result =
           failure.get() == null
               ? TestExecutionResult.successful()
@@ -213,15 +220,15 @@ public final class SandboxDescriptor extends AbstractTestDescriptor {
                       .getParentIdObject()
                       .map(id -> mirrors.get(toOuter(id)))
                       .orElse(SandboxDescriptor.this);
-              mirror = new MirrorDescriptor(uniqueId, identifier);
+              mirror =
+                  new MirrorDescriptor(uniqueId, identifier, variantMarker(identifier, parent));
               parent.addChild(mirror);
               mirrors.put(uniqueId, mirror);
               listener.dynamicTestRegistered(mirror);
             }
             return mirror;
           }
-        },
-        request.getCancellationToken());
+        });
 
     // A planned test that the sandboxed discovery did not find is reported, not dropped.
     if (failure.get() == null) {

@@ -3,9 +3,11 @@ package org.robolectric.junit.platform.internal;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.platform.commons.support.AnnotationSupport;
 import org.junit.platform.engine.DiscoverySelector;
@@ -23,23 +25,18 @@ import org.robolectric.pluginapi.config.ConfigurationStrategy.Configuration;
 
 /**
  * Builds the robolectric engine's test plan: one {@link SandboxDescriptor} per sandbox, containing
- * the tests that run in it: JUnit Jupiter classes that use {@code RobolectricExtension}, and,
- * unless disabled with {@value #JUNIT4_ENABLED_PROPERTY}, JUnit 4 classes that use a Robolectric
- * runner.
+ * the tests of JUnit Jupiter classes that use {@code RobolectricExtension} that run in it.
  */
 public final class Planner {
-  /** Set to false to leave JUnit 4 classes to the JUnit Vintage engine. */
-  static final String JUNIT4_ENABLED_PROPERTY = "robolectric.junit.platform.junit4.enabled";
-
-  private static final boolean JUNIT4_AVAILABLE = isJUnit4Available();
-
   private final TestDescriptor engineDescriptor;
   private final EngineDiscoveryRequest request;
   private final JupiterDelegate jupiter;
-  private final boolean junit4Enabled;
   private final Map<SandboxSpec, SandboxDescriptor> sandboxes = new LinkedHashMap<>();
   private final Map<SandboxSpec, List<DiscoverySelector>> jupiterSelectors = new LinkedHashMap<>();
   private final Map<String, Integer> keyCounts = new HashMap<>();
+  private final boolean alwaysIncludeVariantMarkersInTestName =
+      Boolean.parseBoolean(
+          System.getProperty("robolectric.alwaysIncludeVariantMarkersInTestName", "false"));
 
   public Planner(TestDescriptor engineDescriptor, EngineDiscoveryRequest request) {
     this.engineDescriptor = engineDescriptor;
@@ -47,16 +44,11 @@ public final class Planner {
     this.jupiter =
         new JupiterDelegate(
             request.getConfigurationParameters(), request.getOutputDirectoryCreator());
-    this.junit4Enabled =
-        request.getConfigurationParameters().getBoolean(JUNIT4_ENABLED_PROPERTY).orElse(true)
-            && JUNIT4_AVAILABLE;
   }
 
   /** Whether the robolectric engine runs {@code testClass}. */
   public boolean isTestClass(Class<?> testClass) {
-    return isTopLevelClass(testClass)
-        && (usesRobolectricExtension(testClass)
-            || (junit4Enabled && JUnit4Compat.isCandidate(testClass)));
+    return isTopLevelClass(testClass) && usesRobolectricExtension(testClass);
   }
 
   static boolean isTopLevelClass(Class<?> clazz) {
@@ -84,26 +76,14 @@ public final class Planner {
   public void plan(Selection selection) {
     for (Map.Entry<Class<?>, List<Selection.Item>> entry : selection.itemsByClass().entrySet()) {
       Class<?> testClass = entry.getKey();
-      boolean claimed = true;
       try {
-        if (usesRobolectricExtension(testClass)) {
-          planJupiterClass(testClass, entry.getValue());
-        } else {
-          List<JUnit4Compat.PlannedTest> tests = JUnit4Compat.plan(testClass, entry.getValue());
-          if (tests == null) {
-            claimed = false; // Not a Robolectric runner: left to other engines.
-          } else {
-            JUnit4Compat.addToSandboxes(tests, this::sandbox);
-          }
-        }
-      } catch (Throwable e) {
+        planJupiterClass(testClass, entry.getValue());
+      } catch (RuntimeException | LinkageError e) {
         // An invalid configuration (e.g. an unsupported SDK) fails the class, not the whole run.
         UniqueId id = engineDescriptor.getUniqueId().append("invalid-class", testClass.getName());
         engineDescriptor.addChild(new InvalidClassDescriptor(id, testClass, e));
       }
-      if (claimed) {
-        ClaimRegistry.claim(testClass);
-      }
+      ClaimRegistry.claim(testClass);
     }
     for (Map.Entry<SandboxSpec, List<DiscoverySelector>> entry : jupiterSelectors.entrySet()) {
       // Planned with the application class loader: building the test plan needs no sandbox.
@@ -125,6 +105,7 @@ public final class Planner {
     List<TestMethod> tests = TestMethod.collect(testClass);
     Map<SandboxSpec, List<TestMethod>> testsBySandbox = new LinkedHashMap<>();
     Map<SandboxSpec, Configuration> configurations = new LinkedHashMap<>();
+    Map<SandboxSpec, Set<TestMethod>> namedWithSdk = new HashMap<>();
     int selectedTests = 0;
     for (TestMethod test : tests) {
       if (!Selection.selects(items, test)) {
@@ -134,22 +115,32 @@ public final class Planner {
       Configuration configuration =
           runtime.getConfiguration(test.configurationClass(), test.method);
       AndroidManifest manifest = runtime.getAppManifest(configuration);
-      for (Sdk sdk : runtime.selectSdks(configuration, manifest)) {
+      List<Sdk> sdks = runtime.selectSdks(configuration, manifest);
+      for (int i = 0; i < sdks.size(); i++) {
         SandboxSpec spec =
             runtime.createSpec(
                 configuration,
-                sdk,
+                sdks.get(i),
                 runtime.createClassLoaderConfig(
                     configuration, test.configurationClass(), test.method));
         testsBySandbox.computeIfAbsent(spec, unused -> new ArrayList<>()).add(test);
         configurations.putIfAbsent(spec, configuration);
+        // Like RobolectricTestRunner, name a test that runs on several SDKs after the SDK, except
+        // on the last one, which keeps the plain name.
+        if (alwaysIncludeVariantMarkersInTestName || i < sdks.size() - 1) {
+          namedWithSdk.computeIfAbsent(spec, unused -> new HashSet<>()).add(test);
+        }
       }
     }
     // Only add the class to the plan once all of its tests could be planned.
     boolean wholeClass = Selection.selectsWholeClass(items) && selectedTests == tests.size();
     for (Map.Entry<SandboxSpec, List<TestMethod>> entry : testsBySandbox.entrySet()) {
       SandboxSpec spec = entry.getKey();
-      sandbox(spec).offerConfiguration(configurations.get(spec));
+      SandboxDescriptor sandbox = sandbox(spec);
+      sandbox.offerConfiguration(configurations.get(spec));
+      for (TestMethod test : namedWithSdk.getOrDefault(spec, Set.of())) {
+        sandbox.nameWithSdk(test.source());
+      }
       List<DiscoverySelector> selectors =
           jupiterSelectors.computeIfAbsent(spec, unused -> new ArrayList<>());
       if (wholeClass && entry.getValue().size() == tests.size()) {
@@ -160,15 +151,6 @@ public final class Planner {
           selectors.add(test.selector());
         }
       }
-    }
-  }
-
-  private static boolean isJUnit4Available() {
-    try {
-      Class.forName("org.junit.runner.RunWith", false, Planner.class.getClassLoader());
-      return true;
-    } catch (ClassNotFoundException e) {
-      return false;
     }
   }
 

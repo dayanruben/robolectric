@@ -83,6 +83,35 @@ class SimulatorPluginTest {
   }
 
   @Test
+  fun simulate_withDependencyLocking_resolvesTheSimulatorOutsideTheTestClasspath() {
+    val project =
+      AndroidTestProject(
+        tempFolder.root,
+        extraBuildScript =
+          """
+          dependencyLocking { lockAllConfigurations() }
+
+          tasks.register("printClasspaths") {
+            val simulate = tasks.named<JavaExec>("simulateDebug").map { it.classpath }
+            val unitTest = tasks.named<Test>("testDebugUnitTest").map { it.classpath }
+            doLast {
+              simulate.get().forEach { println("Simulate classpath: " + it.name) }
+              unitTest.get().forEach { println("Unit test classpath: " + it.name) }
+            }
+          }
+          """,
+      )
+    // Lock the app's own dependencies, as a project that uses locking would have.
+    project.build(":app:dependencies", "--write-locks")
+
+    val result = project.build("printClasspaths")
+
+    assertThat(result.output).contains("Simulate classpath: simulator-4.17.jar")
+    assertThat(result.output).contains("Unit test classpath: robolectric-4.17.jar")
+    assertThat(result.output).doesNotContain("Unit test classpath: simulator-4.17.jar")
+  }
+
+  @Test
   fun simulate_variantWithoutUnitTests_explainsWhy() {
     val project = AndroidTestProject(tempFolder.root, appBuildScript = FLAVORS)
 
@@ -159,6 +188,24 @@ class SimulatorPluginTest {
     // Crash reporters wrap the default handler, which Android always has.
     assertThat(simulateJvmArgs(result))
       .contains("-Drobolectric.installDefaultUncaughtExceptionHandler=true")
+  }
+
+  @Test
+  fun simulate_isCompatibleWithTheConfigurationCache() {
+    // Skip the simulator itself: the configuration cache entry, which holds the task's state, is
+    // stored before any task runs, and reused by the second build.
+    val project =
+      AndroidTestProject(
+        tempFolder.root,
+        extraBuildScript =
+          """tasks.matching { it.name == "simulateDebug" }.configureEach { onlyIf { false } }""",
+      )
+
+    val firstResult = project.build("simulateDebug", "--configuration-cache")
+    val secondResult = project.build("simulateDebug", "--configuration-cache")
+
+    assertThat(firstResult.output).contains("Configuration cache entry stored.")
+    assertThat(secondResult.output).contains("Configuration cache entry reused.")
   }
 
   private fun simulateJvmArgs(result: BuildResult): List<String> =
