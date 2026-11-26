@@ -8,6 +8,8 @@ import static org.robolectric.util.reflector.Reflector.reflector;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.ColorSpace;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.media.Image;
@@ -209,7 +211,7 @@ public class ShadowPixelCopy {
     ShadowNativeSurface shadowSurface = Shadow.extract(surface);
     ImageReader imageReader = shadowSurface.getContainerImageReader();
 
-    if (doDimensionsMatch(destBitmap, imageReader, srcRect)) {
+    if (doDimensionsMatch(destBitmap, imageReader.getWidth(), imageReader.getHeight(), srcRect)) {
       // fast path, just copy to destination screenshot, no need to resize
       copyFromImageReader(imageReader, destBitmap);
     } else {
@@ -218,24 +220,22 @@ public class ShadowPixelCopy {
           Bitmap.createBitmap(
               imageReader.getWidth(), imageReader.getHeight(), Bitmap.Config.ARGB_8888);
 
-      copyFromImageReader(imageReader, intermediateBitmap);
-      Rect dst = new Rect(0, 0, destBitmap.getWidth(), destBitmap.getHeight());
-      Canvas resizingCanvas = new Canvas(destBitmap);
-      Paint paint = new Paint();
-      resizingCanvas.drawBitmap(intermediateBitmap, srcRect, dst, paint);
-      intermediateBitmap.recycle();
+      try {
+        copyFromImageReader(imageReader, intermediateBitmap);
+        drawScreenshot(intermediateBitmap, srcRect, destBitmap);
+      } finally {
+        intermediateBitmap.recycle();
+      }
     }
   }
 
-  /**
-   * Determine if the image reader dimensions exactly match the given bitmap and cropping srcRect
-   */
+  /** Determine if the source dimensions exactly match the given bitmap and cropping srcRect */
   private static boolean doDimensionsMatch(
-      Bitmap destBitmap, ImageReader imageReader, Rect srcRect) {
-    if (destBitmap.getWidth() != imageReader.getWidth()) {
+      Bitmap destBitmap, int sourceWidth, int sourceHeight, @Nullable Rect srcRect) {
+    if (destBitmap.getWidth() != sourceWidth) {
       return false;
     }
-    if (destBitmap.getHeight() != imageReader.getHeight()) {
+    if (destBitmap.getHeight() != sourceHeight) {
       return false;
     }
     if (srcRect == null) {
@@ -248,10 +248,10 @@ public class ShadowPixelCopy {
     if (srcRect.top != 0) {
       return false;
     }
-    if (srcRect.right != imageReader.getWidth()) {
+    if (srcRect.right != sourceWidth) {
       return false;
     }
-    if (srcRect.bottom != imageReader.getHeight()) {
+    if (srcRect.bottom != sourceHeight) {
       return false;
     }
     return true;
@@ -266,9 +266,21 @@ public class ShadowPixelCopy {
   private static void takeScreenshot(View view, Bitmap screenshot, @Nullable Rect srcRect) {
     validateBitmap(screenshot);
 
+    boolean useHardwareRendering = HardwareRenderingScreenshot.canTakeScreenshot(view);
+    if (useHardwareRendering
+        && doDimensionsMatch(screenshot, view.getWidth(), view.getHeight(), srcRect)
+        && hasRenderedPixelFormat(screenshot)) {
+      // fast path, render straight into the destination screenshot, no need to resize or convert
+      PerfStatsCollector.getInstance()
+          .measure(
+              "ShadowPixelCopy-Hardware",
+              () -> HardwareRenderingScreenshot.takeScreenshot(view, screenshot));
+      return;
+    }
+
     Bitmap bitmap = Bitmap.createBitmap(view.getWidth(), view.getHeight(), Bitmap.Config.ARGB_8888);
     try {
-      if (HardwareRenderingScreenshot.canTakeScreenshot(view)) {
+      if (useHardwareRendering) {
         PerfStatsCollector.getInstance()
             .measure(
                 "ShadowPixelCopy-Hardware",
@@ -290,7 +302,20 @@ public class ShadowPixelCopy {
     }
   }
 
+  /**
+   * Determine if the bitmap stores pixels the way {@link HardwareRenderingScreenshot} renders them,
+   * so that it can receive a rendered frame without a conversion.
+   */
+  private static boolean hasRenderedPixelFormat(Bitmap bitmap) {
+    return bitmap.getConfig() == Bitmap.Config.ARGB_8888
+        && bitmap.isPremultiplied()
+        && ColorSpace.get(ColorSpace.Named.SRGB).equals(bitmap.getColorSpace());
+  }
+
   private static void drawScreenshot(Bitmap bitmap, @Nullable Rect srcRect, Bitmap destination) {
+    // PixelCopy replaces the destination's content. Erasing it before a blending draw does that for
+    // less than a draw with PorterDuff.Mode.SRC, which is slow when it scales the bitmap.
+    destination.eraseColor(Color.TRANSPARENT);
     Canvas canvas = new Canvas(destination);
     try {
       Rect dst = new Rect(0, 0, destination.getWidth(), destination.getHeight());
